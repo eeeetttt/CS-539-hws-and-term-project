@@ -1,0 +1,186 @@
+---
+title: "cs539 hw4 Application Questions"
+author: "Enbo Tian"
+date: '2022-03-25'
+output: pdf_document
+---
+# Viterbi Decoding Algorithm
+## a)
+```{r}
+library(HMM)
+# Viterbi algorithm
+Viterbi=function(v,a,b,initial_distribution) {
+  
+  T = length(v)
+  M = nrow(a)
+  prev = matrix(0, T-1, M)
+  omega = matrix(0, M, T)
+  
+  omega[, 1] = log(initial_distribution * b[, v[1]])
+  for(t in 2:T){
+    for(s in 1:M) {
+      probs = omega[, t - 1] + log(a[, s]) + log(b[s, v[t]])
+      prev[t - 1, s] = which.max(probs)
+      omega[s, t] = max(probs)
+    }
+  }
+  
+  S = rep(0, T)
+  last_state=which.max(omega[,ncol(omega)])
+  S[1]=last_state
+  
+  j=2
+  for(i in (T-1):1){
+    S[j]=prev[i,last_state] 
+    last_state=prev[i,last_state] 
+    j=j+1
+  }
+  
+  S[which(S==1)]='A'
+  S[which(S==2)]='B'
+  
+  S=rev(S)
+  
+  return(S)
+  
+}
+
+#repeat the result presented in the pdf file
+
+hmm = initHMM(c("H","L"), c("A","C","G","T"),startProbs = c(0.5,0.5), transProbs=matrix(c(0.5,0.5,0.4,0.6),2),
+	emissionProbs=matrix(c(0.2,0.3,0.3,0.2,0.3,0.2,0.2,0.3),2))
+
+observations = c("G","G","C","A","C","T","G","A","A")
+viterbi = viterbi(hmm,observations)
+viterbi
+```
+
+## b)
+```{r}
+#the observed sequence of: AGTCGTA
+observations = c("A","G","T","C","G","T","A")
+viterbi = viterbi(hmm,observations)
+viterbi
+```
+
+# Bayesian Filtering
+## a)
+```{r}
+# create X and Y
+x0 <- rnorm(1,0,1)
+x = x0
+X <- rep(0,100)
+Y <- rep(0,100)
+for(i in 1:100){
+  X[i] <- rnorm(1,0.99*x+0.1,0.1)
+  x <- X[i]
+  Y[i] <- rnorm(1,-2*x+1,0.4)
+}
+X <- c(x0,X)
+head(X)
+head(Y)
+```
+
+## b)
+```{r}
+pygx <- pnorm(Y,-2*X[-1],0.4)
+pxgx1 <- pnorm(X[-1],0.99*X[1:100]+0.1,0.1)
+pxkgy1k1 <- pygx*pxgx1
+z <- pygx[100]*pxkgy1k1[100]
+pxkgy1k <- 1/z * pygx *pxkgy1k1
+head(pxkgy1k)
+```
+
+## c)
+```{r}
+post <- qnorm(pxkgy1k,0.99*X[1:101]+0.1,0.1)
+post = post[-100]
+mean(post)
+conf <- post/X[-1]
+alpha <- 1-conf
+length(alpha[abs(alpha)<0.05])
+```
+
+## d)
+```{r}
+library("readxl")
+data<-read_excel("filter_problem.xlsx", col_names = c("index","Xk","Yk"))
+Y <- data$Yk[-1]
+X <- data$Xk
+pygx <- pnorm(Y,-2*X[-1],0.4)
+pxgx1 <- pnorm(X[-1],0.99*X[1:100]+0.1,0.1)
+pxkgy1k1 <- pygx*pxgx1
+z <- pygx[100]*pxkgy1k1[100]
+pxkgy1k <- 1/z * pygx *pxkgy1k1
+head(pxkgy1k)
+post <- qnorm(pxkgy1k,0.99*X[1:101]+0.1,0.1)
+post = post[-100]
+mean(post)
+conf <- post/X[-1]
+alpha <- 1-conf
+length(alpha[abs(alpha)<0.05])
+```
+
+## e)
+```{r}
+x0 <- rnorm(1,0,1)
+x = x0
+X <- rep(0,100)
+for(i in 1:100){
+  X[i] <- rnorm(1,x,0.2)
+  x <- X[i]
+}
+X <- c(x0,X)
+pygx <- pnorm(Y,-2*X[-1],0.4)
+pxgx1 <- pnorm(X[-1],X[1:100],0.2)
+pxkgy1k1 <- pygx*pxgx1
+z <- pygx[100]*pxkgy1k1[100]
+pxkgy1k <- 1/z * pygx *pxkgy1k1
+head(pxkgy1k)
+post <- qnorm(pxkgy1k,X[1:100],0.2)
+post = post[-100]
+mean(post)
+conf <- post/X[-1]
+alpha <- 1-conf
+length(alpha[abs(alpha)<0.05])
+```
+
+## f)
+Since there is NA value in d and e, y may not follow the distribution which we provided.
+In addition,c d have a good confidence but e doesn't.
+
+# Sequential MCMC
+```{r}
+Y <- data$Yk[-1]
+X <- data$Xk
+pygx <- pnorm(Y,-2*X[-1],0.4)
+pxgx1 <- pnorm(X[-1],0.99*X[1:100]+0.1,0.1)
+pxkgy1k1 <- pygx*pxgx1
+z <- pygx[100]*pxkgy1k1[100]
+pxkgy1k <- 1/z * pygx *pxkgy1k1
+#a)
+mean(sample(pxkgy1k,100))
+#b)
+mean(sample(pxkgy1k,1000,replace = TRUE))
+```
+
+# GP and Linear Regression 
+##a)
+```{r}
+library(GPfit)
+library(brms)
+data <- read.csv("synchronous_machine.csv")
+### It is too slow for my computer to do the chain with sampling in the model,
+### so I can only pick one parameter for Gp.(nearly 10 min once)
+fitgp <- brm(qIy~gp(PF)+e+dIf+If,chain = 4, data = data)
+summary(fitgp)
+```
+
+## b)
+```{r}
+fit <- lm(qIy~PF+e+dIf+If,data = data)
+summary(fit)
+```
+
+## c)
+MSE of gp is much less than linear regression.
