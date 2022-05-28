@@ -1,0 +1,419 @@
+---
+title: "CS539 hw1"
+author: "Enbo Tian"
+date: "2022/1/24"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+# problem 1
+
+## a)
+```{r}
+X <- matrix(runif(2 * 2), 2, 2)
+COV <- crossprod(X)
+mu <- rep(0, 2)
+library(MASS)
+x <- mvrnorm(100, mu, COV)
+plot(x)
+```
+
+# b)
+```{r}
+mu <- c(-1,1)
+x <- mvrnorm(100, mu, COV)
+plot(x)
+mu <- c(0,0)
+```
+The interval of x1 is moving left by about 1, 
+and the interval of x2 is moving up by about 1.
+
+## c)
+```{r}
+COV <- 2*COV
+x <- mvrnorm(100, mu, COV)
+plot(x)
+```
+
+## d)
+```{r}
+COV <- matrix(c(1,0.5,0.5,1), nrow = 2, ncol = 2)
+x <- mvrnorm(100, mu, COV)
+plot(x)
+```
+
+## e)
+```{r}
+COV <- matrix(c(1,-0.5,-0.5,1), nrow = 2, ncol = 2)
+x <- mvrnorm(100, mu, COV)
+plot(x)
+```
+
+## f)
+```{r}
+X <- matrix(runif(2 * 2), 2, 2)
+COV <- crossprod(X)
+mu <- rep(0, 2)
+x <- mvrnorm(100, mu, COV)
+mean(x)
+cov(x)
+```
+
+## g)
+```{r}
+COV <- matrix(c(1,-0.5,-0.5,1), nrow = 2, ncol = 2)
+x <- mvrnorm(1000, mu, COV)
+plot(x)
+```
+
+## h)
+```{r}
+mean(x)
+cov(x)
+```
+
+## i)
+```{r}
+x <- mvrnorm(10, mu, COV)
+mean(x[,1])
+x <- mvrnorm(100, mu, COV)
+mean(x[,1])
+x <- mvrnorm(1000, mu, COV)
+mean(x[,1])
+```
+Mean is tend to 0, as the more samples we have
+
+## j)
+```{r}
+COV # the initial covariance we use to get the sample
+x <- mvrnorm(10, mu, COV)
+cov(x)
+x <- mvrnorm(100, mu, COV)
+cov(x)
+x <- mvrnorm(1000, mu, COV)
+cov(x)
+```
+covariance is getting closer to the initial covariance, When we have
+more sample
+
+
+# problem 2
+## a)
+```{r}
+class1 <- rnorm(1000,-1,1)
+```
+
+## b)
+```{r}
+class2 <- rnorm(1000,2,2)
+```
+
+## c)
+```{r}
+hist(class1, col='red')
+hist(class2, col='blue', add=TRUE)
+```
+
+## d)
+```{r}
+library(stats4)
+library(methods)
+options(warn = -1)
+LL1 <- function(mu,sigma){
+  -sum(log(dnorm(class1,mu,sigma)))
+}
+m1<-mle(LL1,start = list(mu=0,sigma=1))
+m1
+LL2 <- function(mu,sigma){
+  R = dnorm(class2,mu,sigma)
+  -sum(log(R))
+}
+m2<-mle(LL2,start = list(mu=0,sigma=1))
+m2
+options(warn = getOption("warn"))
+```
+
+## e)
+```{r}
+mu1 <- m1@coef[1]
+sigma1<- m1@coef[2]
+mu2<-m2@coef[1]
+sigma2<-m2@coef[2]
+
+x <- seq(-10, 10, length=100)
+plot(x,dnorm(x,mu1,sigma1), type = "l",col = "red")
+par(new=TRUE)
+plot(x,dnorm(x,mu2,sigma2), type = "l",col="blue")
+i = -2
+while(round(dnorm(i,mu1,sigma1),5)!=round(dnorm(i,mu2,sigma2),5)){
+  i=i+0.00001
+}
+par(new=TRUE)
+abline(v=-0.014)
+```
+
+## f)
+both of the decision boundary of pdf and histogram are about 0
+
+## g)
+```{r}
+class2 <- rnorm(2000,2,2)
+#c
+hist(class1, col='red')
+hist(class2, col='blue', add=TRUE)
+#d
+options(warn = -1)
+LL1 <- function(mu,sigma){
+  -sum(log(dnorm(class1,mu,sigma)))
+}
+m1<-mle(LL1,start = list(mu=0,sigma=1))
+m1
+LL2 <- function(mu,sigma){
+  R = dnorm(class2,mu,sigma)
+  -sum(log(R))
+}
+m2<-mle(LL2,start = list(mu=0,sigma=1))
+m2
+options(warn = getOption("warn"))
+#e
+mu1 <- m1@coef[1]
+sigma1<- m1@coef[2]
+mu2<-m2@coef[1]
+sigma2<-m2@coef[2]
+
+x <- seq(-10, 10, length=100)
+plot(x,dnorm(x,mu1,sigma1), type = "l",col = "red")
+par(new=TRUE)
+plot(x,dnorm(x,mu2,sigma2), type = "l",col="blue")
+i = -2
+while(round(dnorm(i,mu1,sigma1),5)!=round(dnorm(i,mu2,sigma2),5)){
+  i=i+0.0001
+}
+par(new=TRUE)
+abline(v=-0.016)
+#f
+```
+Since there are more samples in class2, the decision boundary of histogram comes to -1, but
+the decision boundary of pdf does not change.
+
+
+## h)
+```{r}
+library(MASS)
+fitdistr(class1, densfun="normal")
+class2 <- rnorm(1000,2,2)
+fitdistr(class2, densfun="normal")
+```
+the error rate are on the second line.
+```{r}
+library(MASS)
+fitdistr(class1, densfun="normal")
+class2 <- rnorm(2000,2,2)
+fitdistr(class2, densfun="normal")
+```
+
+## i)
+```{r}
+options(warn = -1)
+df <- data.frame(class1,class2)
+library(pROC)
+roc(df$class1,df$class2,plot=TRUE)
+options(warn = getOption("warn"))
+```
+
+# problem 3
+
+## a)
+```{r}
+library("Rlab") 
+coin <- rbern(1000, 0.6)
+```
+
+##b)
+```{r}
+options(warn = -1)
+LL1 <- function(p){
+  -sum(log(dbern(coin,p)))
+}
+m1<-mle(LL1,start = list(p=0.01))
+m1@coef
+LL <- function(n,p){
+  -sum(log(dbern(rbern(n, 0.6),p)))
+}
+
+for(n in 1:1000){
+  ll <- function(p){
+    LL(n,p)
+  }
+  m1<-mle(LL1,start = list(p=0.01))
+  pi[n]<-m1@coef
+}
+
+x<-seq(0, 1000, length=1000)
+plot(x,pi)
+
+options(warn = getOption("warn"))
+```
+## c)
+```{r}
+coin2 <- rbern(1000, 0.6)
+LL2 <- function(p){
+  -sum(log(dbern(coin2,p)))
+}
+m2<-mle(LL2,start = list(p=0.01))
+m2@coef
+
+LL <- function(n,p){
+  -sum(log(dbern(rbern(n, 0.6),p)))
+}
+
+for(n in 1:100){
+  ll <- function(p){
+    LL(n,p)
+  }
+  m1<-mle(LL1,start = list(p=0.01))
+  pi[n]<-m1@coef
+}
+x<-seq(0, 1000, length=1000)
+plot(x,pi[1:1000])
+
+options(warn = getOption("warn"))
+```
+both $P_{ML}$ from b) and c) are approximate and get close to 0.6,
+
+## d)
+```{r}
+x <- seq(-1, 2, length=100)
+plot(x,dbeta(x, 2, 2), type = "l")
+```
+
+## e)
+```{r}
+p <- seq(0, 1, length=1000)
+ml <- function(p){
+  mult = 1 
+  for(i in 1:10){
+    mult <- mult*p^coin[i]*(1-p)^(1-coin[i])
+  }
+  mult
+}
+plot(p,ml(p))
+```
+
+## f)
+```{r}
+post <- function(p){
+  ml(p)*pi
+}
+plot(post(p))
+```
+Since the posterior is proportion to prior and likelihood, 
+the curve is not change too much.
+
+## g)
+```{r}
+max(post(p))
+```
+MAP is 6.915e-04
+
+
+## h)
+```{r}
+var(post(p))
+```
+
+## i)
+```{r}
+p <- seq(0, 1, length=100)
+ml <- function(p){
+  mult = 1 
+  for(i in 1:10){
+    mult <- mult*p^coin[i]*(1-p)^(1-coin[i])
+  }
+  mult
+}
+plot(p,ml(p))
+post <- function(p){
+  ml(p)*pi
+}
+plot(post(p))
+max(post(p))
+var(post(p))
+```
+
+## j)
+```{r}
+p <- seq(0, 1, length=1000)
+ml <- function(p){
+  mult = 1 
+  for(i in 1:10){
+    mult <- mult*p^coin[i]*(1-p)^(1-coin[i])
+  }
+  mult
+}
+plot(p,ml(p))
+post <- function(p){
+  ml(p)*pi
+}
+plot(post(p))
+max(post(p))
+var(post(p))
+
+```
+
+# problem 4
+
+## a)
+```{r}
+library(MASS)
+pi1 <- 0.1
+mu1 <- c(3, 2)
+COV1 <- matrix(c(1,0,0,1), nrow = 2, ncol = 2)
+
+pi2 <- 0.6
+mu2 <- c(-5, -3)
+COV2 <- matrix(c(2,-1,-1,3), nrow = 2, ncol = 2)
+
+pi3<-0.3
+COV3 <- matrix(c(6,3,3,3), nrow = 2, ncol = 2)
+mu3 <- c(4, 2)
+
+p <- pi1*mvrnorm(1000, mu1, COV1)+pi2*mvrnorm(1000, mu2, COV2)+pi3*mvrnorm(1000, mu3, COV3)
+
+```
+
+## b)
+```{r}
+mean(p[1])
+mean(p[2])
+
+cov(p)
+```
+
+## c)
+```{r}
+mu <- c(mean(p[1]),mean(p[2]))
+COV <- cov(p)
+f <- mvrnorm(1000, mu, COV)
+
+```
+
+## d)
+```{r}
+
+plot(p,col="red")
+par(new=TRUE)
+plot(f,col="green")
+
+```
+the mixture model have the same concentration area with multivariate normal distribution.
+The difference is that the mixture model have a more range.
+
+## e)
+```{r}
+K3<-kmeans(p, centers = 3, nstart = 25)
+str(K3)
+```
+
