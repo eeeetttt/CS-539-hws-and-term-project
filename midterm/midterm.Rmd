@@ -1,0 +1,92 @@
+---
+title: "midterm"
+author: "Enbo Tian"
+date: "2022/3/4"
+output:
+  pdf_document: default
+  html_document: default
+---
+# problem 3
+## c
+```{r}
+x <- rnorm(100, 0,1)
+e <- rnorm(100,0,0.1)
+
+ti <- 1 + 0.2*x -1*x^2 +e
+
+
+wl1 <- function(lam1,l){
+    w1l <- e%*%e+lam1*sqrt(sum(w1*w1))
+    w1l
+}
+
+wl2 <- function(lam2,l){
+   w2l <-  e%*%e+lam2*(sum(w2*w2))
+   w2l
+}
+
+w1h <- rep(0,11)
+w2h <- rep(0,11)
+h=0
+lam = c(0,10,20,30,40,50,60,70,80,90,100)
+for( i in lam){
+    w1 = 0.2
+    w2 = 1
+    for(k in 1: 3){
+      w1 <- wl1(lam1 = i,l=k)
+      w2 <- wl2(lam2 = i,l=k)
+    }
+    w1h[h] = w1
+    w2h[h] = w2
+    h=h+1
+}
+
+plot(lam,w1h)
+plot(lam,w2h)
+```
+
+## d)
+w1,2 is increasing when lambda1,2 increasing
+
+
+# problem 6
+## d)
+```{r}
+library("readxl")
+train<-read_excel("training.xlsx",col_names = c("x1","x2","group"))
+fit1 <- glm(group~ x1+x2,data=train)
+summary(fit1)
+
+fit2 <- glm(group~ x1+x2-1,data = train)
+summary(fit2)
+```
+
+## e)
+from the coding in d), AIC for model 1 is 23.442, AIC for model 2 is 703.76
+
+## f)
+```{r}
+trdata1 <- predict(fit1, newdata = train, type = "response")
+trdata2 <- predict(fit2, newdata = train, type = "response")
+test<-read_excel("test.xlsx",col_names = c("x1","x2","group"))
+testdata1 <- predict(fit1, newdata = test, type = "response" )
+testdata2 <- predict(fit2, newdata = test, type = "response")
+## training model 1
+glm.pred1=rep(1,300)
+glm.pred1[trdata1 >1.5]=2
+table(glm.pred1,factor(train$group))
+## training model 2
+glm.pred2=rep(1,300)
+glm.pred2[trdata2 >1.5]=2
+table(glm.pred2,factor(train$group))
+## test model 1
+glm.test1 = rep(1,40)
+glm.test1[testdata1 >1.5]=2
+table(glm.test1,factor(test$group))
+## test model 2
+glm.test2=rep(1,40)
+glm.test2[testdata2 >1.5]=2
+table(glm.test2,factor(test$group))
+
+
+```
