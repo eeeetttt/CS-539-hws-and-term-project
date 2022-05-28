@@ -1,0 +1,193 @@
+---
+title: "hw2"
+author: "Enbo Tian"
+date: "2/14/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+# Linear Regression Problem
+## 1)
+```{r}
+rm(list=ls())
+library("readxl")
+data<-read_excel("Real estate valuation data set.xlsx")
+## a
+hist(data$`X1 transaction date`)
+hist(data$`X2 house age`)
+hist(data$`X3 distance to the nearest MRT station`)
+hist(data$`X4 number of convenience stores`)
+hist(data$`X5 latitude`)
+hist(data$`X6 longitude`)
+hist(data$`Y house price of unit area`)
+
+## b
+plot(data[,2:8])
+boxplot(data[,2:8])
+## There is significant outlier for X3: distance to the nearest MRT station
+cor(data[,2:8])
+```
+## 2
+```{r}
+df <- data.frame(data[2:8])
+LR<-lm(data$`Y house price of unit area`~data$`X1 transaction date` 
+       +data$`X2 house age`
+       +data$`X3 distance to the nearest MRT station`
+       +data$`X4 number of convenience stores`
+       +data$`X5 latitude`+data$`X6 longitude`)
+summary(LR)
+# predicted weights
+summary(LR)$coefficients
+# price as a function of time(X1)
+## increase in 5.149
+# RMSE
+summary(LR)$sigma
+```
+## 3
+```{r}
+library(rstanarm)
+
+# lambda = 1
+bayesm<- stan_glm(df$Y.house.price.of.unit.area~.,data=df,prior_aux = exponential(1))
+summary(bayesm)
+
+# lambda = 10
+bayesm2<- stan_glm(df$Y.house.price.of.unit.area~.,data=df,prior_aux = exponential(10))
+summary(bayesm2)
+
+# lambda = 100
+bayesm3<- stan_glm(df$Y.house.price.of.unit.area~.,data=df,prior_aux = exponential(100))
+summary(bayesm3)
+
+```
+
+## 4
+```{r}
+library(robustHD)
+x2 <- data$`X2 house age`
+x3 <- data$`X3 distance to the nearest MRT station`
+
+s2<-standardize(x2)
+s3<-standardize(x3)
+
+bayesm4<- stan_glm(data$`Y house price of unit area`~s2+s3,data=data)
+summary(bayesm4)
+```
+## 5
+```{r}
+library(bayestestR)
+map_estimate(bayesm)
+map_estimate(bayesm4)
+
+M = 7
+N = 414
+
+lnp1 <- 1727- 1/2*7*log(414)
+lnp2 <- 1747 -1/2*7*log(414)
+lnp1
+lnp2
+```
+7 Gaussian basis model have a high evidence
+
+## 6
+```{r}
+#kfold1<-kfold(bayesm,K = 10)
+#kfold2 <- kfold(bayesm4,K=10)
+#loo_compare(kfold1,kfold2)
+```
+bayes model too large to run k fold cv.
+
+# Classification Problem
+
+## 1
+```{r}
+rm(list=ls())
+data<-read_excel("ENB2012_data.xlsx")
+
+diff <- rep(0,768)
+
+for( i in 1: 768){
+  if(data$Y1[i]-data$Y2[i]>0){
+     diff[i] <- 1
+  }
+}
+```
+## 1 
+```{r}
+# label 0
+par(mfrow=c(2,4))
+hist(data$X1[which(diff==0)])
+hist(data$X2[which(diff==0)])
+hist(data$X3[which(diff==0)])
+hist(data$X4[which(diff==0)])
+hist(data$X5[which(diff==0)])
+hist(data$X6[which(diff==0)])
+hist(data$X7[which(diff==0)])
+hist(data$X8[which(diff==0)])
+# label 1
+hist(data$X1[which(diff==1)])
+hist(data$X2[which(diff==1)])
+hist(data$X3[which(diff==1)])
+hist(data$X4[which(diff==1)])
+hist(data$X5[which(diff==1)])
+hist(data$X6[which(diff==1)])
+hist(data$X7[which(diff==1)])
+hist(data$X8[which(diff==1)])
+
+df<-data.frame(data[,1:8],diff)
+cor(df)
+```
+x5 have the highest predictive power
+
+
+## 2 
+```{r}
+model <- glm(diff~.,data = df, family=binomial)
+summary(model)
+## predicted weights: estimate
+## classifier accuracy: AIC
+```
+## 3
+```{r}
+library(ROCR)
+pred = predict(model, newdata=df, type="response")
+predictions = prediction(pred, diff, label.ordering = NULL)
+plot(unlist(performance(predictions, "sens")@x.values), unlist(performance(predictions, "sens")@y.values), 
+     type="l", lwd=2, ylab="Specificity", xlab="Cutoff")
+par(new=TRUE)
+plot(unlist(performance(predictions, "spec")@x.values), unlist(performance(predictions, "spec")@y.values), 
+     type="l", lwd=2, col='red', ylab="", xlab="")
+```
+## 4
+```{r}
+library(rstanarm)
+bayes<- stan_glm(diff~.,data=df,prior = normal(location = 0, scale = 0.1, autoscale = FALSE) )
+summary(bayes)
+bayes2<- stan_glm(diff~.,data=df,prior = normal(location = 0, scale = 1, autoscale = FALSE) )
+summary(bayes2)
+bayes3<- stan_glm(diff~.,data=df,prior = normal(location = 0, scale = 10, autoscale = FALSE) )
+summary(bayes3)
+bayes4<- stan_glm(diff~.,data=df,prior = normal(location = 0, scale = 10, autoscale = FALSE) )
+summary(bayes4)
+```
+
+
+## 5
+
+```{r}
+
+#kfold1<-kfold(bayes,K = 10)
+#kfold2<-kfold(bayes2,K=10)
+#kfold3<-kfold(bayes3,K = 10)
+#kfold4<-kfold(bayes4,K = 10)
+#loo_compare(kfold1, kfold2, kfold3,kfold4)
+```
+The code above should be correct, but since I have 1.5MB for each bayes model,
+It is not able to run the code.
+
+## 6
+```{r}
+X1 = c(0.8,600.0,286.0,138.1,5,4,0.25)
+X2 = c(0.67,630.0,296.0,238.1,2,6,0.5)
+```
