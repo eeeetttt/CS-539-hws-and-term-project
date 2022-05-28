@@ -1,0 +1,137 @@
+---
+title: "cs539 hw5"
+author: "Enbo Tian"
+date: '2022-04-19'
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+#KL Distance 
+
+## a)
+```{r}
+library(LaplacesDemon)
+p <- 1/3*dnorm(runif(10),-1,2)+2/3*dnorm(runif(10),1,1)
+
+m <- 1:20/20*2-1 # set 100 m from -1 to 1
+s <- 1:10/10+1  # set 100 s from 1 to 2
+
+Dist <- rep(0,200)
+count = 1
+for(i in 1:20){
+  for(j in 1:10){
+    q <-  dnorm(runif(10),m[i],s[j])
+    Dist[count] <- KLD(p,q)$intrinsic.discrepancy
+    count = count+1
+  }
+}
+
+Dist <- matrix(Dist,20,10)
+Dist
+min(Dist)
+which(Dist== min(Dist), arr.ind = TRUE)
+
+# row = 8, col= 3
+8/20-1
+3/10+1
+```
+Then $m_a = -0.6$ , $\sigma^2_m = 1.3$ have the minimum KL distance with p 
+
+## b)
+```{r}
+mean(p)
+var(p)
+q_p <- dnorm(runif(10),0.2809131,0.0009584375)
+
+KLD(p,q)
+```
+the KL distanced is 0.004042311, however, it is not the minimum KL distance.
+
+# TSNE
+
+## a)
+```{r}
+library(Rtsne)
+xtrain <- read.table("X_train.txt")
+
+ytrain <- read.table("y_train.txt")
+
+traintsne <- Rtsne(xtrain)
+# Y
+# 1   red WALKING
+# 2   green WALKING_UPSTAIRS
+# 3   blue WALKING_DOWNSTAIRS
+# 4   light_blue SITTING
+# 5   purple STANDING
+# 6   yellow LAYING
+plot(traintsne$Y,col= ytrain$V1+1)
+```
+The KL distance for Y=1 is the largest, Y = 7 is the smallest, Y = 4,5 are emed.
+
+
+## b)
+```{r}
+xtest <- read.table("X_test.txt")
+ytest <- read.table("y_test.txt")
+testtsne <- Rtsne(xtest)
+plot(testtsne$Y,col= ytest$V1+1)
+```
+The KL distance for red, green, blue(1, 2, 3) are large, 4,5,6 are small. 
+
+## c)
+The  similarities part are the each part distribution of the color groups.
+both 4 and 5 are neighboring, 1 and 2 are dispersive.
+
+# Neural Networks
+## a)
+```{r}
+library(neuralnet)
+Y1 <- ytrain$V1
+training <- data.frame(Y1,xtrain)
+TrainNN <- neuralnet(Y1 ~ .,data = training)
+summary(TrainNN)
+plot(TrainNN,col.hidden = 'darkgreen',     
+col.hidden.synapse = 'darkgreen',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue')
+```
+```{r}
+Y2 <- ytest$V1
+testing <- data.frame(Y2,xtest)
+TestNN <- neuralnet(Y2 ~ .,data = testing)
+summary(TestNN)
+plot(TestNN,col.hidden = 'darkgreen',     
+col.hidden.synapse = 'darkgreen',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue')
+
+```
+
+## b)
+```{r}
+trainpartci<-read.table("subject_train.txt")
+testpartci <- read.table("subject_test.txt")
+
+Y3 <- trainpartci$V1
+training <- data.frame(Y3,xtrain)
+TrainNN <- neuralnet(Y3 ~ .,data = training)
+plot(TrainNN,col.hidden = 'darkgreen',     
+col.hidden.synapse = 'darkgreen',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue')
+```
+```{r}
+Y4 <- testpartci$V1
+testing <- data.frame(Y4,xtest)
+TestNN <- neuralnet(Y4 ~ .,data = testing)
+plot(TestNN,col.hidden = 'darkgreen',     
+col.hidden.synapse = 'darkgreen',
+     show.weights = F,
+     information = F,
+     fill = 'lightblue')
+
+```
