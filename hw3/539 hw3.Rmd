@@ -1,0 +1,264 @@
+---
+title: "hw3"
+author: "Enbo Tian"
+date: "2022/2/28"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+# Graphical Model 1
+## a)
+```{r}
+rm(list = ls())
+X <- c("cold", "hot", "mild")
+# day 0
+day0 = replicate(5,sample(X,size = 1,prob=c(1/3,1/3,1/3)))
+# function of day
+dayk <- function(day){
+  dayk <- rep(0,5)
+  for (i in 1:5){
+    if (day[i] == "cold"){
+    dayk[i] = sample(c("cold", "hot", "mild"),size =1,prob = c(1/2,1/4,1/4))
+    }
+    else if (day[i] == "hot"){
+    dayk[i] = sample(c("cold", "hot", "mild"),size =1,prob = c(1/3,1/3,1/3))
+    }
+    else if(day[i] == "mild"){
+      dayk[i]= sample(c("cold", "hot", "mild"),size =1,prob = c(1/4,1/4,1/2))
+    }
+  }
+  dayk
+}
+# day 1:5
+day1 <- dayk(day0)
+day2 <- dayk(day1)
+day3 <- dayk(day2)
+day4 <- dayk(day3)
+
+day <- data.frame(day0, day1, day2, day3, day4)
+day
+```
+
+## b)
+```{r}
+# P(day0)
+p0 <- c(1/3,1/3,1/3)
+# p (k given k-1)
+pgiven <- matrix(c(1/2,1/4,1/4,1/3,1/3,1/3,1/4,1/4,1/2),ncol=3)
+# marginal prob
+p1 <- pgiven%*%p0
+p2 <- pgiven%*%p1
+p3 <- pgiven%*%p2
+margp <- data.frame(p0,p1,p2,p3)
+margp
+```
+
+## c)
+```{r}
+# 3|2hot 
+p3g2 <- c(1/3,1/3,1/3)
+p3g2
+# p(1|2="hot") = p(2|1)*p(1)/p(2 = "hot")
+p1 <- c(p1)
+p2 <- c(p2)
+p3 <- c(p3)
+p1g2 <- pgiven * p1 / p2 
+p1g2 <- c(p1g2[,2])
+p1g2
+# p(0|1) = p(1|0)*p(0)/p(1|2="hot")
+p0g1 <- pgiven * p0 /p1g2
+p0g1
+```
+
+## d)
+```{r}
+# give day2 is hot
+day2 = "hot"
+# get most probable day1
+if (max(p1g2) == p1g2[1]){
+  day1 = "cold"
+  i = 1
+}else if(max(p1g2) == p1g2[2]){
+  day1 = "hot"
+  i = 2
+}else if(max(p1g2) == p1g2[3]){
+  day1 = "mild"
+  i =3
+}
+# get most probable day0
+new_p0g1 <- p0g1[,i]
+if (max(new_p0g1) == new_p0g1[1]){
+  day0 = "cold"
+}else if(max(new_p0g1) == new_p0g1[2]){
+  day0 = "hot"
+}else if(max(new_p0g1) == new_p0g1[3]){
+  day0 = "mild"
+}
+# Same prob for day3 given hot of day2
+c(day0,day1,day2)
+```
+ the most probable report for day 0 to 2 are "cold" "hot"  "hot", and 
+ 
+ we have the same probability for day3.
+
+# Graphical Model 2
+## a)
+```{r}
+mi <- c(-2, 2 ,0)
+# height function
+height <- function(statep){
+  m <- replicate(5,sample(mi,size = 1,prob = statep))
+  y <- rep(0,5)
+  for (i in 1:5){
+    y[i] <- rnorm(1,m,1)
+  }
+  y
+}
+# get height
+y0 <- height(p0)
+y1 <- height(p1)
+y2 <- height(p2)
+y3 <- height(p3)
+datay <- data.frame(y0,y1,y2,y3)
+datay
+```
+
+## b)
+```{r}
+m <- c(2,0,-2,-2)
+y0 <-replicate(5,rnorm(1,m[1],1)) 
+y1 <-replicate(5,rnorm(1,m[2],1))
+y2 <-replicate(5,rnorm(1,m[3],1))
+y3 <-replicate(5,rnorm(1,m[4],1))
+data2y<- data.frame(y0,y1,y2,y3)
+data2y
+```
+## c)
+```{r}
+Y0 =0.7
+Y1 =1.5
+Y2 =-1.8
+Y3 =-1
+
+#p(y0|x0)
+d0 <- rep(0,3)
+d0[1] <- dnorm(Y0,-2,1)
+d0[2] <- dnorm(Y0,0,1)
+d0[3] <- dnorm(Y0,2,1)
+#p(y1|x1)
+d1 <- rep(0,3)
+d1[1] <- dnorm(Y1,-2,1)
+d1[2] <- dnorm(Y1,0,1)
+d1[3] <- dnorm(Y1,2,1)
+#p(y2|x2)
+d2 <- rep(0,3)
+d2[1] <- dnorm(Y2,-2,1)
+d2[2] <- dnorm(Y2,0,1)
+d2[3] <- dnorm(Y2,2,1)
+#p(y1|x1)
+d3 <- rep(0,3)
+d3[1] <- dnorm(Y3,-2,1)
+d3[2] <- dnorm(Y3,0,1)
+d3[3] <- dnorm(Y3,2,1)
+# p(x0)*p(y0|x0)*p(x1|x0)*p(y1|x1)*p(x2|x1)*p(y2|x2)*p(x3|x2)*p(y3|x3)
+mp <- p0*d0*pgiven*d1*pgiven*d2*pgiven*d3
+sum(mp[,1])
+sum(mp[,2])
+sum(mp[,3])
+```
+# Gaussian Mixture Model
+## a)
+```{r}
+rm(list = ls())
+library("readxl")
+data <- read_excel("gmm_data.xlsx")
+plot(data$Var1,data$Var2)
+```
+the number of clusters is 3.
+
+## b)
+```{r}
+library(fMultivar)
+msnFit(data)
+
+library(ellipse)
+rho = cor(data)
+y_on_x <- lm(data$Var2 ~ data$Var1)
+x_on_y <- lm(data$Var1 ~ data$Var2)
+plot_legend <- c("99% CI green", "95% CI red","90% CI blue",
+                 "Y on X black", "X on Y brown")
+plot(data, xlab = "X", ylab = "Y",col = "grey")
+lines(ellipse(rho), col="red")
+lines(ellipse(rho, level = .99), col="green")
+lines(ellipse(rho, level = .90), col="blue")
+abline(y_on_x)
+abline(x_on_y, col="brown")
+legend(3,1,legend=plot_legend,cex = .5, bty = "n")
+```
+## c)
+```{r}
+library(MGMM)
+d <- as.matrix(data)
+K2GMM <- FitGMM(d,k=2)
+plot(data, xlab = "X", ylab = "Y",col = "grey")
+points(K2GMM@Means[[1]][1],K2GMM@Means[[1]][2],col = "red")
+points(K2GMM@Means[[2]][1],K2GMM@Means[[2]][2],col = "dark green")
+```
+## d)
+```{r}
+K3GMM <- FitGMM(d,k=3)
+plot(data, xlab = "X", ylab = "Y",col = "grey")
+points(K3GMM@Means[[1]][1],K3GMM@Means[[1]][2],col = "red")
+points(K3GMM@Means[[2]][1],K3GMM@Means[[2]][2],col = "dark green")
+points(K3GMM@Means[[3]][1],K3GMM@Means[[3]][2],col = "blue")
+```
+## e)
+
+```{r}
+# Sigma_i = dx * d covariance matrix
+si <- diff(data$Var1) %*% diff(rho)
+si[1:20,]
+```
+# Poisson Mixture Model
+## 1)
+```{r}
+rm(list = ls())
+```
+```{r}
+library("readxl")
+data <- read_excel("poisson_data.xlsx")
+x <- data$X
+hist(x)
+```
+From the plot it may fit two distribution from 1-10 and 10-30
+
+## b)
+```{r}
+library(MASS)
+lambda <- fitdistr(x,densfun="Poisson")
+lambda
+a <- 0:30
+b <- dpois(a,lambda$estimate)
+hist(x,xlim=c(0,30),ylim= c(0,250))
+par(new=TRUE)
+plot(a,b,yaxt="n",xaxt="n",xlab="",ylab="")
+```
+a simple poisson distribution is not a good fit.
+
+## c)
+```{r}
+library(mixtools)
+mixture <- normalmixEM(x,lambda = 0.092997,k=2)
+summary(mixture)
+```
+
+## d)
+```{r}
+plot(mixture, density=TRUE)
+```
+
+## e)
+the single poisson distribution can not fit the data very well,
+the mixture model give two poisson distribution and separate the data into 
+two modle, which fit the data better. 
